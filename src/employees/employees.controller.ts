@@ -55,7 +55,7 @@ export class EmployeesController {
             const isAdmin = checkAdminToken(token, res);
             if (isAdmin === true) {
                 return this.employeeService.findAll().then(result => {
-                    res.status(HttpStatus.OK).send(result);
+                    return res.status(HttpStatus.OK).send(result);
                 })
             }
         }

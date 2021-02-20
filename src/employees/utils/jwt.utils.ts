@@ -33,7 +33,7 @@ const signJWT = (result): string => {
         isActive: result.isAdmin,
         ipWhitelist: result.ipWhitelist
 
-    }, config.JWTSecret, { expiresIn: '24h' });
+    }, config.JWTSecret);
     return token
 }
 

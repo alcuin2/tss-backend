@@ -40,12 +40,18 @@ describe('EmployeesController', () => {
             "accountNumber": "2155215445"
           }])
       });
-      const req = httpMocks.createRequest()
+      const req = httpMocks.createRequest({
+        connection: {
+          remoteAddress: "127.0.0.1"
+        }
+      }
+      )
       req.res = httpMocks.createResponse()
+      const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6Im1haWwyb2tlNUBnbWFpbC5jb20iLCJpc0FkbWluIjp0cnVlLCJpc0FjdGl2ZSI6dHJ1ZSwiaWF0IjoxNjEzNzU5MjgyfQ.tQzU3JWVqj8zqmUVPJ8J8Eum22rPM4j0NCcC80g6kIk"
 
       jest.spyOn(service, 'findAll').mockImplementation(() => result);
-      // jest.spyOn(checkVPN, 'findAll').mockImplementation(() => result);
-      expect(await controller.findAll(req.res, req, "")).toBe(result);
+      // let checkVPN = jest.fn(() => true)
+      expect(await controller.findAll(req.res, req, token)).toBe(result);
     });
   });
 });
