@@ -1,17 +1,20 @@
 import * as nodemailer from 'nodemailer';
+import * as dotenv from 'dotenv';
+
+
+dotenv.config();
 
 var transport = nodemailer.createTransport({
-    host: "smtp.mailtrap.io",
-    port: 2525,
+    host: process.env.EMAILHOST,
+    port: process.env.EMAILPORT,
     auth: {
-        user: "2f4e24055ee96e",
-        pass: "d0d1c2f757346f"
+        user: process.env.EMAILUSER,
+        pass: process.env.EMAILPASS
     }
 });
 
 export default {
-    mongoURI: "mongodb+srv://alcuin:1RW4hSkVTgS1p4KA@tss.ofetu.mongodb.net/tss?retryWrites=true&w=majority",
-    JWTSecret: "jhdfhvjksdhdu7rgbbvi9dfhnhfiocniihie39iudfj",
-    // IPWhiteList: [],
+    mongoURI: "" + process.env.MONGODBURI,
+    JWTSecret: process.env.JWTSECRET,
     mailer: transport
 }
