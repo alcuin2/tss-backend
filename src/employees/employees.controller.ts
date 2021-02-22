@@ -16,209 +16,194 @@ export class EmployeesController {
     constructor(private readonly employeeService: EmployeesService) { }
 
     @Post("/login")
-    login(@Body() loginEmployeeDto: LoginEmployeeDto, @Res() res: Response, @Req() req: Request) {
+    async login(@Body() loginEmployeeDto: LoginEmployeeDto, @Res({ passthrough: true }) res: Response, @Req() req: Request) {
         let email = loginEmployeeDto.email;
         let password = loginEmployeeDto.password;
 
-        this.employeeService.findByEmail(email).then(result => {
-            const isAllowed = checkVPN(req, result.ipWhitelist);
-            if (isAllowed === false) {
-                res.status(HttpStatus.BAD_REQUEST).send({
-                    "error": "Your source IP address is not whitelisted, request blocked"
-                })
-                return;
+        const result = await this.employeeService.findByEmail(email);
+        if (result === null) {
+            res.status(HttpStatus.NOT_FOUND)
+            return {
+                "error": "We cannot find this email in our records"
             }
-            if (result.isActive === false) {
-                res.status(HttpStatus.NOT_FOUND).send({
-                    "error": "This account is not active"
-                })
-                return
+        }
+        const isAllowed = checkVPN(req, result.ipWhitelist);
+        if (isAllowed === false) {
+            res.status(HttpStatus.BAD_REQUEST);
+            return { "error": "Your source IP address is not whitelisted, request blocked" }
+        }
+        if (result.isActive === false) {
+            res.status(HttpStatus.NOT_FOUND)
+            return {
+                "error": "This account is not active"
             }
-            // authenticate password and return JWT, expires after 24 hours
-            bcrypt.compare(password, result.password).then(employee => {
-                const token = signJWT(result);
-                res.status(HttpStatus.OK).send({
-                    "data": result,
-                    "token": token
-                })
-            }).catch(err => {
-                res.status(HttpStatus.BAD_REQUEST).send({
-                    "error": "invalid credentials"
-                })
-                return;
-            })
-        }).catch(err => {
-            res.status(HttpStatus.NOT_FOUND).send({
-                "error": "record not found"
-            })
-        })
+        }
+        // authenticate password and return JWT, expires after 24 hours
+        const hashed = await bcrypt.compare(password, result.password)
+        if (hashed === true) {
+            const token = signJWT(result);
+            res.status(HttpStatus.OK)
+            return {
+                "data": result,
+                "token": token
+            }
+        } else {
+            res.status(HttpStatus.BAD_REQUEST);
+            return {
+                "error": "invalid credentials"
+            }
+        }
 
     }
 
     @Get()
-    findAll(@Res() res: Response, @Req() req: Request, @Headers("token") token) {
+    async findAll(@Res({ passthrough: true }) res: Response, @Req() req: Request, @Headers("token") token) {
         let decodedToken = decodeJWT(token, res);
-        this.employeeService.findByEmail(decodedToken.email).then((admin) => {
-            const isAllowed = checkVPN(req, admin.ipWhitelist);
-            if (isAllowed === false) {
-                res.status(HttpStatus.BAD_REQUEST).send({
-                    "error": "Your source IP address is not whitelisted, request blocked"
-                })
-                return
+        const admin = await this.employeeService.findByEmail(decodedToken.email);
+        if (admin == null) {
+            res.status(HttpStatus.NOT_FOUND);
+            return { "error": "admin account not found" }
+        }
+        const isAllowed = checkVPN(req, admin.ipWhitelist);
+        if (isAllowed === false) {
+            res.status(HttpStatus.BAD_REQUEST)
+            return {
+                "error": "Your source IP address is not whitelisted, request blocked"
             }
-            if (admin.isAdmin === false) {
-                res.status(HttpStatus.BAD_REQUEST).send({
-                    "error": "admins only"
-                })
-                return
+        }
+        if (admin.isAdmin === false) {
+            res.status(HttpStatus.BAD_REQUEST)
+            return {
+                "error": "admins only"
             }
-            this.employeeService.findAll().then(result => {
-                res.status(HttpStatus.OK).send(result);
-            }).catch(err => {
-                res.status(HttpStatus.NOT_FOUND).send({
-                    "error": "id not found"
-                })
-            })
-        })
+        }
+
+        const result = await this.employeeService.findAll();
+        res.status(HttpStatus.OK)
+        return result;
+
     }
 
     @Get(":id")
-    findOne(@Param("id") id, @Res() res: Response, @Req() req: Request, @Headers("token") token) {
+    async findOne(@Param("id") id, @Res({ passthrough: true }) res: Response, @Req() req: Request, @Headers("token") token) {
         let decodedToken = decodeJWT(token, res);
-        this.employeeService.findByEmail(decodedToken.email).then((admin) => {
-            const isAllowed = checkVPN(req, admin.ipWhitelist);
-            if (isAllowed === false) {
-                res.status(HttpStatus.BAD_REQUEST).send({
-                    "error": "Your source IP address is not whitelisted, request blocked"
-                })
-                return
+        const admin = await this.employeeService.findByEmail(decodedToken.email);
+        if (admin == null) {
+            res.status(HttpStatus.NOT_FOUND);
+            return { "error": "admin account not found" }
+        }
+        const isAllowed = checkVPN(req, admin.ipWhitelist);
+        if (isAllowed === false) {
+            res.status(HttpStatus.BAD_REQUEST)
+            return {
+                "error": "Your source IP address is not whitelisted, request blocked"
             }
-            if (admin.isAdmin === false) {
-                res.status(HttpStatus.BAD_REQUEST).send({
-                    "error": "admins only"
-                })
-                return
+        }
+        if (admin.isAdmin === false) {
+            res.status(HttpStatus.BAD_REQUEST)
+            return {
+                "error": "admins only"
             }
-            if (admin.isActive === false) {
-                res.status(HttpStatus.NOT_FOUND).send({
-                    "error": "This account is not active"
-                })
-                return
-            }
-            this.employeeService.findOne(id).then(result => {
-                res.status(HttpStatus.OK).send(result);
-            }).catch(err => {
-                res.status(HttpStatus.NOT_FOUND).send({
-                    "error": "id not found"
-                })
-            })
-        })
-
+        }
+        const result = await this.employeeService.findOne(id);
+        if (result === null) {
+            res.status(HttpStatus.NOT_FOUND);
+            return { "error": "id not found" }
+        }
+        else {
+            res.status(HttpStatus.OK)
+            return result;
+        }
     }
 
     @Post()
-    create(@Body() createEmployeeDto: CreateEmployeeDto, @Res() res: Response, @Req() req: Request) {
+    async create(@Body() createEmployeeDto: CreateEmployeeDto, @Res({ passthrough: true }) res: Response, @Req() req: Request) {
         if (createEmployeeDto.ipWhitelist === undefined) {
-            res.status(HttpStatus.BAD_REQUEST).send(
-                { "error": "ipWhitelist array must be included" }
-            )
-            return
+            res.status(HttpStatus.BAD_REQUEST)
+            return { "error": "ipWhitelist array must be included" }
         }
         if (createEmployeeDto.ipWhitelist.length === 0) {
-            res.status(HttpStatus.BAD_REQUEST).send(
-                { "error": "must include at least one ip address in ipWhiteList" }
-            )
-            return
+            res.status(HttpStatus.BAD_REQUEST)
+            return { "error": "must include at least one ip address in ipWhiteList" }
+
         }
         createEmployeeDto.ipWhitelist.forEach((ip) => {
             if (/^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/.test(ip)) {
                 // do nothing
             }
             else {
-                res.status(HttpStatus.BAD_REQUEST).send(
-                    { "error": `"${ip}" is not a valid ip address ` }
-                )
-                return
-
+                res.status(HttpStatus.BAD_REQUEST)
+                return { "error": `"${ip}" is not a valid ip address ` }
             }
         })
-        this.employeeService.create(createEmployeeDto).then(result => {
-            res.status(HttpStatus.CREATED).send(result);
-        }).catch(err => {
-            res.status(HttpStatus.BAD_REQUEST).send(
-                { "error": "Error occurred, email already exists." }
-            )
-        })
+        try {
+            const result = await this.employeeService.create(createEmployeeDto);
+            res.status(HttpStatus.CREATED)
+            return result
 
+        } catch {
+            res.status(HttpStatus.BAD_REQUEST);
+            return { "error": "Error occurred, email already exists." }
+        }
     }
 
     @Delete(":id")
-    delete(@Param("id") id, @Res() res: Response, @Req() req: Request, @Headers("token") token) {
+    async delete(@Param("id") id, @Res({ passthrough: true }) res: Response, @Req() req: Request, @Headers("token") token) {
         let decodedToken = decodeJWT(token, res);
-        this.employeeService.findByEmail(decodedToken.email).then((admin) => {
-            const isAllowed = checkVPN(req, admin.ipWhitelist);
-            if (isAllowed === false) {
-                res.status(HttpStatus.BAD_REQUEST).send({
-                    "error": "Your source IP address is not whitelisted, request blocked"
-                })
-                return
+        const admin = await this.employeeService.findByEmail(decodedToken.email);
+        if (admin == null) {
+            res.status(HttpStatus.NOT_FOUND);
+            return { "error": "admin account not found" }
+        }
+        const isAllowed = checkVPN(req, admin.ipWhitelist);
+        if (isAllowed === false) {
+            res.status(HttpStatus.BAD_REQUEST)
+            return {
+                "error": "Your source IP address is not whitelisted, request blocked"
             }
-            if (admin.isAdmin === false) {
-                res.status(HttpStatus.BAD_REQUEST).send({
-                    "error": "admins only"
-                })
-                return
+        }
+        if (admin.isAdmin === false) {
+            res.status(HttpStatus.BAD_REQUEST)
+            return {
+                "error": "admins only"
             }
-            if (admin.isActive === false) {
-                res.status(HttpStatus.NOT_FOUND).send({
-                    "error": "This account is not active"
-                })
-                return
-            }
-            this.employeeService.delete(id).then(result => {
-                res.status(HttpStatus.OK).send(result);
-            }).catch(err => {
-                res.status(HttpStatus.NOT_FOUND).send({
-                    "error": "id not found"
-                })
-            })
-        })
-
+        }
+        const result = await this.employeeService.delete(id);
+        res.status(HttpStatus.OK)
+        return result;
     }
 
     @Put(":id")
-    update(@Param("id") id, @Body() updateEmployeeDto: CreateEmployeeDto, @Res() res: Response, @Req() req: Request, @Headers("token") token) {
+    async update(@Param("id") id, @Body() updateEmployeeDto: CreateEmployeeDto, @Res() res: Response, @Req() req: Request, @Headers("token") token) {
         let decodedToken = decodeJWT(token, res);
-        this.employeeService.findByEmail(decodedToken.email).then((caller) => {
-            console.log(caller);
-            const isAllowed = checkVPN(req, caller.ipWhitelist);
-            if (isAllowed === false) {
-                res.status(HttpStatus.BAD_REQUEST).send({
-                    "error": "Your source IP address is not whitelisted, request blocked"
-                })
-                return
-            }
-            if (caller.isActive == false) {
-                res.status(HttpStatus.NOT_FOUND).send({
-                    "error": "This account is not active"
-                })
-                return
-            }
-            if (caller.isAdmin === true || caller._id == id) {
-                this.employeeService.update(id, updateEmployeeDto).then(result => {
-                    res.status(HttpStatus.OK).send(result);
-                    sendUpdateMail(result.email);
-                }).catch(err => {
-                    res.status(HttpStatus.NOT_FOUND).send({
-                        "error": "id not found"
-                    })
-                })
+        const caller = await this.employeeService.findByEmail(decodedToken.email)
+        if (caller == null) {
+            res.status(HttpStatus.NOT_FOUND);
+            return { "error": "caller account not found" }
+        }
+        const isAllowed = checkVPN(req, caller.ipWhitelist);
+        if (isAllowed === false) {
+            res.status(HttpStatus.BAD_REQUEST)
+            return { "error": "Your source IP address is not whitelisted, request blocked" }
+        }
+        if (caller.isActive == false) {
+            res.status(HttpStatus.NOT_FOUND)
+            return { "error": "This account is not active" }
+        }
+        if (caller.isAdmin === true || caller._id == id) {
+            const result = await this.employeeService.update(id, updateEmployeeDto)
+            if (result == null) {
+                res.status(HttpStatus.NOT_FOUND)
+                return { "error": "id not found" }
             } else {
-                res.status(HttpStatus.FORBIDDEN).send({
-                    "error": "you must be the owner or admin to update"
-                })
+                res.status(HttpStatus.OK)
+                sendUpdateMail(result.email); // email alerts
+                return result
             }
-
-        })
+        } else {
+            res.status(HttpStatus.FORBIDDEN)
+            return { "error": "you must be the owner or admin to update" }
+        }
     }
+
 }

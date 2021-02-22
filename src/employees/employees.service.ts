@@ -40,4 +40,8 @@ export class EmployeesService {
     async findByEmail(email: string): Promise<Employee> {
         return await this.employeeModel.findOne({ email: email });
     }
+
+    async findByEmailAndDelete(email: string): Promise<Employee> {
+        return await this.employeeModel.findOneAndRemove({ email: email });
+    }
 }
