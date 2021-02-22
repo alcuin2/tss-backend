@@ -41,6 +41,11 @@ export class EmployeesController {
                     "data": result,
                     "token": token
                 })
+            }).catch(err => {
+                res.status(HttpStatus.BAD_REQUEST).send({
+                    "error": "invalid credentials"
+                })
+                return;
             })
         }).catch(err => {
             res.status(HttpStatus.NOT_FOUND).send({
