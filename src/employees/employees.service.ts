@@ -30,6 +30,10 @@ export class EmployeesService {
     }
 
     async update(id: string, employee: Employee): Promise<Employee> {
+        if (employee.password !== undefined) { // check if password is part of the update
+            const salt = await bcrypt.genSalt();
+            employee.password = await bcrypt.hash(employee.password, salt);
+        }
         return await this.employeeModel.findByIdAndUpdate(id, employee);
     }
 

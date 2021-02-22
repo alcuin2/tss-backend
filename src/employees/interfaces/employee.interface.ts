@@ -1,5 +1,3 @@
-import { Document } from 'mongoose';
-
 
 export interface Employee {
     _id?: string;
@@ -8,6 +6,7 @@ export interface Employee {
     email: string,
     password: string,
     bank: string;
+    ipWhitelist: string[];
     accountNumber: string;
     isAdmin: boolean;
     isActive: boolean;

@@ -7,6 +7,7 @@ export class CreateEmployeeDto extends Document {
     readonly surname: string;
     readonly bank: string;
     readonly accountNumber: string;
+    readonly ipWhitelist: string[];
     readonly isAdmin: boolean;
     readonly isActive: boolean;
     readonly token?: string

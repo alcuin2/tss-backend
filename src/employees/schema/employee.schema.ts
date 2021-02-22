@@ -7,6 +7,7 @@ export const EmployeeSchema = new mongoose.Schema({
     password: { type: String },
     bank: String,
     accountNumber: String,
+    ipWhitelist: [String],
     isAdmin: { type: Boolean, default: false },
     isActive: { type: Boolean, default: true },
     __v: { type: Number, select: false }

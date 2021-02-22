@@ -12,6 +12,6 @@ var transport = nodemailer.createTransport({
 export default {
     mongoURI: "mongodb+srv://alcuin:1RW4hSkVTgS1p4KA@tss.ofetu.mongodb.net/tss?retryWrites=true&w=majority",
     JWTSecret: "jhdfhvjksdhdu7rgbbvi9dfhnhfiocniihie39iudfj",
-    IPWhiteList: [],
+    // IPWhiteList: [],
     mailer: transport
 }
