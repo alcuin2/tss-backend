@@ -8,6 +8,7 @@ import { sendUpdateMail } from "./utils/email.utils";
 
 import { Request, Response } from 'express';
 import * as bcrypt from 'bcrypt';
+import * as net from "net";
 
 
 @Controller('employees')
@@ -127,15 +128,24 @@ export class EmployeesController {
             return { "error": "must include at least one ip address in ipWhiteList" }
 
         }
-        createEmployeeDto.ipWhitelist.forEach((ip) => {
-            if (/^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/.test(ip)) {
-                // do nothing
+        let testIP: boolean;
+        let lastIP: string;
+        for (let i = 0; i < createEmployeeDto.ipWhitelist.length; i++) {
+            let ip = createEmployeeDto.ipWhitelist[i]
+            lastIP = ip;
+            if (net.isIP(ip) === 4 || net.isIP(ip) === 6) {
+                testIP = true
             }
             else {
-                res.status(HttpStatus.BAD_REQUEST)
-                return { "error": `"${ip}" is not a valid ip address ` }
+                testIP = false
+                break
             }
-        })
+        }
+
+        if (testIP === false) {
+            res.status(HttpStatus.BAD_REQUEST)
+            return { "error": `"${lastIP}" is not a valid ip address` }
+        }
         try {
             const result = await this.employeeService.create(createEmployeeDto);
             res.status(HttpStatus.CREATED)
@@ -174,7 +184,7 @@ export class EmployeesController {
     }
 
     @Put(":id")
-    async update(@Param("id") id, @Body() updateEmployeeDto: CreateEmployeeDto, @Res() res: Response, @Req() req: Request, @Headers("token") token) {
+    async update(@Param("id") id, @Body() updateEmployeeDto: CreateEmployeeDto, @Res({ passthrough: true }) res: Response, @Req() req: Request, @Headers("token") token) {
         let decodedToken = decodeJWT(token, res);
         const caller = await this.employeeService.findByEmail(decodedToken.email)
         if (caller == null) {

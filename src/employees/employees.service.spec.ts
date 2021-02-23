@@ -9,6 +9,7 @@ describe('EmployeesService', () => {
   let service: EmployeesService;
 
   beforeEach(async () => {
+    jest.setTimeout(30000);
     const module: TestingModule = await Test.createTestingModule({
       imports: [EmployeesModule, MongooseModule.forRoot(config.mongoURI)],
     }).compile();
@@ -16,13 +17,11 @@ describe('EmployeesService', () => {
     service = module.get<EmployeesService>(EmployeesService);
   });
 
-  /*
-
   describe('findAll', () => {
     it('should return an instance of Promise', async () => {
 
-      expect(await service.findAll()[0] instanceof Promise<Employee[]>).toBe(true);
+      expect(await service.findAll() instanceof Object).toBe(true);
     });
   });
-  */
+
 });
