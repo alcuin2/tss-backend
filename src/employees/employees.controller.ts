@@ -201,14 +201,13 @@ export class EmployeesController {
             return { "error": "This account is not active" }
         }
         if (caller.isAdmin === true || caller._id == id) {
-            const result = await this.employeeService.update(id, updateEmployeeDto)
-            if (result == null) {
-                res.status(HttpStatus.NOT_FOUND)
-                return { "error": "id not found" }
-            } else {
-                res.status(HttpStatus.OK)
-                sendUpdateMail(result.email); // email alerts
+            try {
+                const result = await this.employeeService.update(id, updateEmployeeDto);
+                res.status(HttpStatus.CREATED)
                 return result
+            } catch {
+                res.status(HttpStatus.BAD_REQUEST);
+                return { "error": "Error occurred, email already exists." }
             }
         } else {
             res.status(HttpStatus.FORBIDDEN)
