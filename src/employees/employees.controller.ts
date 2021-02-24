@@ -201,6 +201,28 @@ export class EmployeesController {
             return { "error": "This account is not active" }
         }
         if (caller.isAdmin === true || caller._id == id) {
+            let testIP: boolean;
+            let lastIP: string;
+            if (updateEmployeeDto.ipWhitelist !== undefined) {
+                for (let i = 0; i < updateEmployeeDto.ipWhitelist.length; i++) {
+                    let ip = updateEmployeeDto.ipWhitelist[i]
+                    lastIP = ip;
+                    if (net.isIP(ip) === 4 || net.isIP(ip) === 6) {
+                        testIP = true
+                    }
+                    else {
+                        testIP = false
+                        break
+                    }
+                }
+
+                if (testIP === false) {
+                    res.status(HttpStatus.BAD_REQUEST)
+                    return { "error": `"${lastIP}" is not a valid ip address` }
+                }
+
+            }
+
             try {
                 const result = await this.employeeService.update(id, updateEmployeeDto);
                 res.status(HttpStatus.CREATED)
